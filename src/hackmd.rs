@@ -80,12 +80,46 @@ impl HackMD {
     }
   }
 
+  /// Get image from given `photo_url`.
+  ///
+  /// If `photo_url` starts with `https://hackmd.io/_uploads/`, this method fetch images
+  /// from protected Amazon S3 server using HackMD's cookie.
+  ///
+  /// Otherwise, it just fetches the image without any cookies.
+  ///
+  /// # Arguments
+  ///
+  /// * `photo_url` - URL of the image
+  pub fn get_photo(&self, photo_url: &str) -> Result<Bytes, HackMDError> {
+    if photo_url.starts_with("https://hackmd.io/_uploads/") {
+      let photo_name = photo_url.split('/').last().unwrap();
+      self.get_protected_photo(photo_name)
+    } else {
+      self.get_normal_photo(photo_url)
+    }
+  }
+
+  fn get_normal_photo(&self, photo_url: &str) -> Result<Bytes, HackMDError> {
+    let client = Client::new();
+    let res = client
+      .get(photo_url)
+      .header(USER_AGENT, "hackmd-rs")
+      .send()?;
+
+    match res.status() {
+      StatusCode::OK => Ok(res.bytes()?),
+      _ => Err(HackMDError::RequestFailure(
+        res.error_for_status().unwrap_err(),
+      )),
+    }
+  }
+
   /// Get protected image from HackMD, which redirects to S3 bucket storage
   ///
   /// # Arguments
   ///
   /// * `photo_name` - URL of protected image
-  pub fn get_protected_photo(&self, photo_name: &str) -> Result<Bytes, HackMDError> {
+  fn get_protected_photo(&self, photo_name: &str) -> Result<Bytes, HackMDError> {
     let cookie = self.cookie.get_cookie(false)?;
     let client = Client::new();
     let res = client
