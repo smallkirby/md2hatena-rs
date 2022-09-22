@@ -4,6 +4,7 @@ use crate::converter::options::*;
 
 use pulldown_cmark::{html, Event, LinkType, Options, Parser, Tag};
 
+#[derive(Debug)]
 pub struct ResolvedImage {
   pub original_url: String,
   pub fotolife_url: String,
@@ -59,7 +60,7 @@ impl Converter {
     self.resolved_images.clear();
     self.unresolved_images.clear();
 
-    let _ = self.convert_internal(markdown, true);
+    let _ = self.convert_internal(markdown);
 
     Ok(())
   }
@@ -67,32 +68,36 @@ impl Converter {
   /// Convert HackMD note to Hatena HTML
   pub fn convert(&mut self) -> Result<String, String> {
     let markdown = self.markdown.clone();
-    let html = self.convert_internal(&markdown, false)?;
+    let html = self.convert_internal(&markdown)?;
 
     Ok(html)
   }
 
-  fn convert_internal(&mut self, markdown: &str, do_parse: bool) -> Result<String, String> {
-    let parser = Parser::new(markdown).map(|event| match &event {
+  fn convert_internal(&mut self, markdown: &str) -> Result<String, String> {
+    let options = Options::all();
+
+    let parser = Parser::new_ext(markdown, options).map(|event| match &event {
       Event::Start(tag) => match &tag {
         // Store image url
         Tag::Image(LinkType::Inline, url, title) => {
-          if do_parse {
+          let resolved_image = self
+            .resolved_images
+            .iter()
+            .find(|image| image.original_url == url.to_string());
+          let unresolved_image = self
+            .unresolved_images
+            .iter()
+            .find(|&image| image == &url.to_string());
+          if unresolved_image.is_none() && resolved_image.is_none() {
             self.unresolved_images.push(url.to_string());
-            Event::Start(Tag::Image(LinkType::Inline, title.clone(), url.clone()))
-          } else {
-            let resolved_image = self
-              .resolved_images
-              .iter()
-              .find(|image| image.original_url == url.to_string());
-            match resolved_image {
-              Some(resolved_image) => Event::Start(Tag::Image(
-                LinkType::Inline,
-                resolved_image.fotolife_url.clone().into(),
-                title.clone(),
-              )),
-              None => Event::Start(Tag::Image(LinkType::Inline, title.clone(), url.clone())),
-            }
+          }
+          match resolved_image {
+            Some(resolved_image) => Event::Start(Tag::Image(
+              LinkType::Inline,
+              resolved_image.fotolife_url.clone().into(),
+              title.clone(),
+            )),
+            None => Event::Start(Tag::Image(LinkType::Inline, title.clone(), url.clone())),
           }
         }
         // Adjust heading level based on options
@@ -106,11 +111,9 @@ impl Converter {
       _ => event,
     });
 
-    // Execute parse
-    let mut html = String::new();
-    html::push_html(&mut html, parser);
-
-    Ok(html)
+    let mut new_html = String::with_capacity(markdown.len() * 2);
+    html::push_html(&mut new_html, parser);
+    Ok(new_html)
   }
 
   /// Resolve image URL to Hatena Fotolife URL

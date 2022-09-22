@@ -1,10 +1,11 @@
-use std::{env, path};
+use std::path;
 
 use clap::Parser;
 use md2hatena::{
+  cli::{download_images, get_api_token, panic_with_error, read_markdown_file, upload_images},
   converter::{self, options::ConverterOptions, ResolvedImage},
   error::ApplicationError,
-  hackmd, hatena, util,
+  hackmd, hatena,
 };
 
 #[derive(Parser, Debug)]
@@ -25,50 +26,8 @@ pub struct Args {
   timeout: u64,
 }
 
-fn test(markdown: &str, download_dir: &path::Path, timeout: u64) -> Result<(), ApplicationError> {
-  let apitoken = env::var("HACKMD_APITOKEN").unwrap();
-  let client = hackmd::HackMD::new(apitoken);
-  let mut fotolife = hatena::HatenaUploader::new(timeout)?;
-
-  let mut converter = converter::Converter::new(ConverterOptions::new());
-  converter.parse(markdown).unwrap();
-
-  // Download images
-  let unresolved_images = converter.unresolved_images.clone();
-  for image in &unresolved_images {
-    let save_path = download_dir.join(image.split('/').last().unwrap());
-    println!("[+] Downloading {}...", image);
-    let bytes = client.get_photo(&image).unwrap();
-    std::fs::write(save_path, bytes).unwrap();
-  }
-
-  // Upload images
-  let mut fotolife_ids = vec![];
-  for image in &unresolved_images {
-    let save_path = download_dir.join(image.split('/').last().unwrap());
-    let uuid = util::gen_uuid();
-    println!(
-      "[+] Uploading {}...",
-      save_path.to_string_lossy().to_string()
-    );
-    let uploaded_path = fotolife.upload(&save_path, &uuid).unwrap();
-    println!("\t\tuploaded to {}", uploaded_path);
-    fotolife_ids.push(fotolife.fotolife_url(&uploaded_path));
-  }
-
-  // Resolve images
-  converter.resolve_images(ResolvedImage::from(unresolved_images, fotolife_ids));
-
-  // Convert to HTML
-  let html = converter.convert().unwrap();
-  println!("{}", html);
-
-  Ok(())
-}
-
-fn main() {
+fn process() -> Result<(), ApplicationError> {
   let args = Args::parse();
-
   let timeout = args.timeout;
   let markdown_path = args.markdown_path;
   let download_dir = path::Path::new(&args.download_dir);
@@ -76,9 +35,36 @@ fn main() {
     std::fs::create_dir(download_dir).unwrap();
   }
 
-  if let Ok(markdown) = std::fs::read_to_string(&markdown_path) {
-    test(&markdown, download_dir, timeout);
-  } else {
-    println!("[-] Failed to read markdown file: {}", markdown_path);
+  let hackmd_apitoken = get_api_token();
+  let markdown = read_markdown_file(&markdown_path);
+
+  let hackmd = hackmd::HackMD::new(hackmd_apitoken);
+  let mut fotolife = hatena::HatenaUploader::new(timeout)?;
+
+  let mut converter = converter::Converter::new(ConverterOptions::new());
+  converter.parse(&markdown).unwrap();
+
+  // Download images
+  let unresolved_images = converter.unresolved_images.clone();
+  download_images(&unresolved_images, download_dir, &hackmd);
+
+  // Upload images
+  let fotolife_ids = upload_images(&unresolved_images, download_dir, &mut fotolife);
+
+  // Resolve images
+  converter.resolve_images(ResolvedImage::from(unresolved_images, fotolife_ids));
+
+  // Convert to HTML
+  let html = converter.convert().unwrap();
+
+  println!("{}", html);
+
+  Ok(())
+}
+
+fn main() {
+  match process() {
+    Ok(()) => (),
+    Err(err) => panic_with_error(err),
   }
 }
