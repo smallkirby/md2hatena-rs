@@ -28,9 +28,9 @@ pub struct Args {
   #[clap(short('t'), long("timeout"), value_parser, default_value = "10")]
   timeout: u64,
 
-  /// Don't use cached images
-  #[clap(short('n'), long("no-cache"), value_parser, default_value = "false")]
-  no_cache: bool,
+  /// Don't upload images to Hatena Fotolife, and don't resolve image URL
+  #[clap(short('n'), long("no-resolve"), value_parser, default_value = "false")]
+  no_resolve: bool,
 }
 
 fn process() -> Result<(), ApplicationError> {
@@ -41,7 +41,7 @@ fn process() -> Result<(), ApplicationError> {
   if !download_dir.exists() {
     std::fs::create_dir(download_dir).unwrap();
   }
-  let no_cache = args.no_cache;
+  let no_resolve = args.no_resolve;
 
   let hackmd_apitoken = get_api_token();
   let markdown = read_markdown_file(&markdown_path);
@@ -52,15 +52,17 @@ fn process() -> Result<(), ApplicationError> {
   let mut converter = converter::Converter::new(ConverterOptions::new());
   converter.parse(&markdown).unwrap();
 
-  // Download images
-  let unresolved_images = converter.unresolved_images.clone();
-  download_images(&unresolved_images, download_dir, &hackmd, !no_cache);
+  if !no_resolve {
+    // Download images
+    let unresolved_images = converter.unresolved_images.clone();
+    download_images(&unresolved_images, download_dir, &hackmd, true);
 
-  // Upload images
-  let fotolife_ids = upload_images(&unresolved_images, download_dir, &mut fotolife, !no_cache);
+    // Upload images
+    let fotolife_ids = upload_images(&unresolved_images, download_dir, &mut fotolife, true);
 
-  // Resolve images
-  converter.resolve_images(ResolvedImage::from(unresolved_images, fotolife_ids));
+    // Resolve images
+    converter.resolve_images(ResolvedImage::from(unresolved_images, fotolife_ids));
+  }
 
   // Convert to HTML
   let html = converter.convert().unwrap();
