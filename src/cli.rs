@@ -3,6 +3,7 @@ use std::{env, fs, path, process::exit};
 use crate::{error::ApplicationError, hackmd::HackMD, hatena::HatenaUploader, util};
 
 use colored::*;
+use hatena_rs::oauth::HatenaConsumerInfo;
 use indicatif::ProgressBar;
 
 /// Exit with error message
@@ -21,10 +22,10 @@ pub fn panic_with_error(err: ApplicationError) {
   exit(1);
 }
 
-/// Check necessary API tokens in envvar, and returns HackMD API token
+/// Check necessary API tokens of Hatena in envvar, and returns them
 ///
 /// Note that this function panics if necessary tokens not found.
-pub fn get_api_token() -> String {
+pub fn get_hatena_api_token() -> HatenaConsumerInfo {
   if env::var("HATENA_CONSUMER_KEY").is_err() {
     println!(
       "{} {} is not set as envvar.",
@@ -41,6 +42,17 @@ pub fn get_api_token() -> String {
     );
     exit(1);
   }
+
+  HatenaConsumerInfo::new(
+    &env::var("HATENA_CONSUMER_KEY").unwrap(),
+    &env::var("HATENA_CONSUMER_SECRET").unwrap(),
+  ).unwrap()
+}
+
+/// Check necessary API tokens of HackMD in envvar, and returns HackMD API token
+///
+/// Note that this function panics if necessary tokens not found.
+pub fn get_hackmd_api_token() -> String {
   if env::var("HACKMD_APITOKEN").is_err() {
     println!(
       "{} {} is not set as envvar.",

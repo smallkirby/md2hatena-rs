@@ -1,6 +1,6 @@
 use crate::error::*;
 use hatena_rs::fotolife::Fotolife;
-use hatena_rs::oauth::{consts::OauthScope, HatenaOauth};
+use hatena_rs::oauth::{consts::OauthScope, HatenaConsumerInfo, HatenaOauth};
 
 /// Hatena Fotolife uploader
 pub struct HatenaUploader {
@@ -16,15 +16,16 @@ impl HatenaUploader {
   ///
   /// # Arguments
   ///
+  /// * `consumer_info` - Hatena consumer keys
   /// * `timeout` - Timeout in seconds for uploading images
-  pub fn new(timeout: u64) -> Result<Self, ApplicationError> {
+  pub fn new(consumer_info: HatenaConsumerInfo, timeout: u64) -> Result<Self, ApplicationError> {
     let scopes = vec![
       OauthScope::WritePublic,
       OauthScope::WritePrivate,
       OauthScope::ReadPublic,
       OauthScope::ReadPrivate,
     ];
-    let mut oauth = HatenaOauth::new(scopes, None).unwrap();
+    let oauth = HatenaOauth::new(scopes, None, consumer_info).unwrap();
     let fotolife = Fotolife::new(oauth);
 
     Ok(HatenaUploader {

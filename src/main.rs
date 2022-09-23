@@ -2,7 +2,10 @@ use std::path;
 
 use clap::Parser;
 use md2hatena::{
-  cli::{download_images, get_api_token, panic_with_error, read_markdown_file, upload_images},
+  cli::{
+    download_images, get_hackmd_api_token, get_hatena_api_token, panic_with_error,
+    read_markdown_file, upload_images,
+  },
   converter::{self, options::ConverterOptions, ResolvedImage},
   error::ApplicationError,
   hackmd, hatena,
@@ -43,11 +46,12 @@ fn process() -> Result<(), ApplicationError> {
   }
   let no_resolve = args.no_resolve;
 
-  let hackmd_apitoken = get_api_token();
+  let hackmd_apitoken = get_hackmd_api_token();
+  let hatena_apitoken = get_hatena_api_token();
   let markdown = read_markdown_file(&markdown_path);
 
   let hackmd = hackmd::HackMD::new(hackmd_apitoken);
-  let mut fotolife = hatena::HatenaUploader::new(timeout)?;
+  let mut fotolife = hatena::HatenaUploader::new(hatena_apitoken, timeout)?;
 
   let mut converter = converter::Converter::new(ConverterOptions::new());
   converter.parse(&markdown).unwrap();
