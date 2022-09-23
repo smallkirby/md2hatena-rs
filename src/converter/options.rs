@@ -37,6 +37,14 @@ pub struct ConverterOptions {
   pub heading_min: HeadingDepth,
 }
 
+impl Default for ConverterOptions {
+  fn default() -> Self {
+    Self {
+      heading_min: HeadingDepth::new(1),
+    }
+  }
+}
+
 impl ConverterOptions {
   pub fn new() -> ConverterOptions {
     ConverterOptions {

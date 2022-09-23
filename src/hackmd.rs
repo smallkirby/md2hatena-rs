@@ -10,7 +10,7 @@ use reqwest::{
 };
 use serde::{Deserialize, Serialize};
 
-use self::{consts::Cookie, cookie::HackMDCookie, error::HackMDError};
+use self::{consts::cookie::ENV_HACKMD_COOKIE, cookie::HackMDCookie, error::HackMDError};
 
 /// HackMD client
 pub struct HackMD {
@@ -47,7 +47,7 @@ pub struct TeamInfo {
 impl HackMD {
   /// Create a new HackMD client
   pub fn new(api_token: String) -> Self {
-    let cookie_env = std::env::var(Cookie::ENV_HACKMD_COOKIE).unwrap_or("".into());
+    let cookie_env = std::env::var(ENV_HACKMD_COOKIE).unwrap_or_else(|_| "".into());
     let cookie = HackMDCookie::new(if cookie_env.is_empty() {
       None
     } else {

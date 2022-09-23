@@ -46,7 +46,8 @@ pub fn get_hatena_api_token() -> HatenaConsumerInfo {
   HatenaConsumerInfo::new(
     &env::var("HATENA_CONSUMER_KEY").unwrap(),
     &env::var("HATENA_CONSUMER_SECRET").unwrap(),
-  ).unwrap()
+  )
+  .unwrap()
 }
 
 /// Check necessary API tokens of HackMD in envvar, and returns HackMD API token
@@ -83,7 +84,7 @@ pub fn read_markdown_file(path: &str) -> String {
 
 /// Download images from Network with progress bar
 pub fn download_images(
-  images: &Vec<String>,
+  images: &[String],
   download_dir: &path::Path,
   hackmd_client: &HackMD,
   use_cache: bool,
@@ -102,14 +103,10 @@ pub fn download_images(
       .map(|image| image.to_string())
       .collect()
   } else {
-    images.clone()
+    images.to_vec()
   };
 
-  println!(
-    "{} {}",
-    "[+]".green().bold(),
-    "Downloading images from HackMD"
-  );
+  println!("{} Downloading images from HackMD", "[+]".green().bold(),);
   let pb = ProgressBar::new(images.len() as u64);
   pb.set_style(
     indicatif::ProgressStyle::with_template(
@@ -133,7 +130,7 @@ pub fn download_images(
 
 /// Upload images to Hatena Fotolife
 pub fn upload_images(
-  images: &Vec<String>,
+  #[allow(clippy::ptr_arg)] images: &Vec<String>,
   download_dir: &path::Path,
   hatena: &mut HatenaUploader,
   use_cache: bool,
@@ -157,9 +154,8 @@ pub fn upload_images(
   };
 
   println!(
-    "{} {}",
+    "{} Uploading images to Hatena Fotolife",
     "[+]".green().bold(),
-    "Uploading images to Hatena Fotolife"
   );
   let pb = ProgressBar::new(images.len() as u64);
   pb.set_style(

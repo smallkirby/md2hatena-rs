@@ -103,7 +103,7 @@ impl Converter {
         // Adjust heading level based on options
         Tag::Heading(level, fragment, classes) => Event::Start(Tag::Heading(
           self.options.heading_min.add(*level as usize - 1).to_level(),
-          fragment.clone(),
+          *fragment,
           classes.clone(),
         )),
         _ => event,

@@ -49,7 +49,7 @@ impl HatenaUploader {
 
   pub fn fotolife_url(&mut self, image_id: &str, extension: &str) -> String {
     if self.myname.is_none() {
-      self.init_profile();
+      self.init_profile().unwrap();
     }
     let dir = &image_id[..8];
     format!(
