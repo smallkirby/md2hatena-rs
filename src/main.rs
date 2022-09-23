@@ -55,10 +55,10 @@ fn process() -> Result<(), ApplicationError> {
   if !no_resolve {
     // Download images
     let unresolved_images = converter.unresolved_images.clone();
-    download_images(&unresolved_images, download_dir, &hackmd, true);
+    download_images(&unresolved_images, download_dir, &hackmd, false);
 
     // Upload images
-    let fotolife_ids = upload_images(&unresolved_images, download_dir, &mut fotolife, true);
+    let fotolife_ids = upload_images(&unresolved_images, download_dir, &mut fotolife, false);
 
     // Resolve images
     converter.resolve_images(ResolvedImage::from(unresolved_images, fotolife_ids));

@@ -97,7 +97,7 @@ impl Converter {
               resolved_image.fotolife_url.clone().into(),
               title.clone(),
             )),
-            None => Event::Start(Tag::Image(LinkType::Inline, title.clone(), url.clone())),
+            None => Event::Start(Tag::Image(LinkType::Inline, url.clone(), title.clone())),
           }
         }
         // Adjust heading level based on options
