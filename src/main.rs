@@ -20,7 +20,7 @@ pub struct Args {
     short('d'),
     long("download-dir"),
     value_parser,
-    default_value = "./md2hatena-imgs"
+    default_value = "./.md2hatena-imgs"
   )]
   download_dir: String,
 
