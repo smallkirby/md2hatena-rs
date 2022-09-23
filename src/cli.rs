@@ -70,10 +70,28 @@ pub fn read_markdown_file(path: &str) -> String {
 }
 
 /// Download images from Network with progress bar
-pub fn download_images(images: &Vec<String>, download_dir: &path::Path, hackmd_client: &HackMD) {
+pub fn download_images(
+  images: &Vec<String>,
+  download_dir: &path::Path,
+  hackmd_client: &HackMD,
+  use_cache: bool,
+) {
   if images.is_empty() {
     return;
   }
+
+  let images: Vec<String> = if use_cache {
+    images
+      .iter()
+      .filter(|image| {
+        let image_path = download_dir.join(image.split('/').last().unwrap());
+        !image_path.exists()
+      })
+      .map(|image| image.to_string())
+      .collect()
+  } else {
+    images.clone()
+  };
 
   println!(
     "{} {}",
@@ -106,11 +124,25 @@ pub fn upload_images(
   images: &Vec<String>,
   download_dir: &path::Path,
   hatena: &mut HatenaUploader,
+  use_cache: bool,
 ) -> Vec<String> {
   if images.is_empty() {
     return vec![];
   }
   let mut fotolife_ids = vec![];
+
+  let images = if use_cache {
+    images
+      .iter()
+      .filter(|image| {
+        let image_path = download_dir.join(image.split('/').last().unwrap());
+        !image_path.exists()
+      })
+      .map(|image| image.to_string())
+      .collect()
+  } else {
+    images.clone()
+  };
 
   println!(
     "{} {}",
