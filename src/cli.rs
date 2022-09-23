@@ -160,10 +160,11 @@ pub fn upload_images(
 
   for image in images {
     let save_path = download_dir.join(image.split('/').last().unwrap());
+    let extension = save_path.extension().unwrap().to_str().unwrap();
     pb.set_message(save_path.to_string_lossy().to_string());
     let uuid = util::gen_uuid();
     let uploaded_path = hatena.upload(&save_path, &uuid).unwrap();
-    fotolife_ids.push(hatena.fotolife_url(&uploaded_path));
+    fotolife_ids.push(hatena.fotolife_url(&uploaded_path, extension));
 
     pb.inc(1);
   }

@@ -46,11 +46,18 @@ impl HatenaUploader {
     Ok(image.image_id)
   }
 
-  pub fn fotolife_url(&mut self, image_id: &str) -> String {
+  pub fn fotolife_url(&mut self, image_id: &str, extension: &str) -> String {
     if self.myname.is_none() {
       self.init_profile();
     }
-    format!("https://f.hatena.ne.jp/{}/{}", self.myname.as_ref().unwrap(), image_id)
+    let dir = &image_id[..8];
+    format!(
+      "https://cdn-ak.f.st-hatena.com/images/fotolife/s/{}/{}/{}.{}",
+      self.myname.as_ref().unwrap(),
+      dir,
+      image_id,
+      extension
+    )
   }
 
   fn init_profile(&mut self) -> Result<(), ApplicationError> {

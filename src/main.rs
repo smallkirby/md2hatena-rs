@@ -11,9 +11,11 @@ use md2hatena::{
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
+  /// Path to Markdown file to convert
   #[clap(value_parser)]
   markdown_path: String,
 
+  /// Directory to save temporary images
   #[clap(
     short('d'),
     long("download-dir"),
@@ -22,8 +24,13 @@ pub struct Args {
   )]
   download_dir: String,
 
+  /// Timeout in seconds for uploading images
   #[clap(short('t'), long("timeout"), value_parser, default_value = "10")]
   timeout: u64,
+
+  /// Don't use cached images
+  #[clap(short('n'), long("no-cache"), value_parser, default_value = "false")]
+  no_cache: bool,
 }
 
 fn process() -> Result<(), ApplicationError> {
@@ -34,6 +41,7 @@ fn process() -> Result<(), ApplicationError> {
   if !download_dir.exists() {
     std::fs::create_dir(download_dir).unwrap();
   }
+  let no_cache = args.no_cache;
 
   let hackmd_apitoken = get_api_token();
   let markdown = read_markdown_file(&markdown_path);
@@ -46,10 +54,10 @@ fn process() -> Result<(), ApplicationError> {
 
   // Download images
   let unresolved_images = converter.unresolved_images.clone();
-  download_images(&unresolved_images, download_dir, &hackmd, true); // XXX
+  download_images(&unresolved_images, download_dir, &hackmd, !no_cache);
 
   // Upload images
-  let fotolife_ids = upload_images(&unresolved_images, download_dir, &mut fotolife, true); // XXX
+  let fotolife_ids = upload_images(&unresolved_images, download_dir, &mut fotolife, !no_cache);
 
   // Resolve images
   converter.resolve_images(ResolvedImage::from(unresolved_images, fotolife_ids));
