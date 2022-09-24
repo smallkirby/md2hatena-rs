@@ -14,7 +14,12 @@ impl Codeblock for Highlightjs {
       "txt".into()
     };
     vec![
-      Event::Html(r#"<pre>"#.into()),
+      // Add filename div
+      Event::Html(r#"<div class="codeblock-title">"#.into()),
+      Event::Text(prog_name.to_string().into()),
+      Event::Html(r#"</div>"#.into()),
+      // Add pre and class tag with appropriate lang class
+      Event::Html(r#"<pre style="padding-top: 0; margin-top: 0;">"#.into()),
       Event::Html(format!(r#"<code class="language-{}">"#, lang,).into()),
     ]
   }
