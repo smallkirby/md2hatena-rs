@@ -1,7 +1,7 @@
 use pulldown_cmark::HeadingLevel;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Clone)]
 pub struct HeadingDepth {
   depth: usize,
 }

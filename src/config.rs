@@ -5,7 +5,7 @@ use crate::{converter::options::HeadingDepth, error::ApplicationError};
 use shellexpand::tilde;
 
 /// Convert options for Markdown to Hatena HTML
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Config {
   /// Minimum heading level
   /// eg: If 3, `#` heading is converted to `###`, `##` is to `####`

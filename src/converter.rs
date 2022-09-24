@@ -6,12 +6,19 @@ use image::ResolvedImage;
 
 use pulldown_cmark::{html, Event, LinkType, Options, Parser, Tag};
 
+#[derive(Debug)]
+struct ImageAltMapping {
+  alt: String,
+  url: String,
+}
+
 /// Converter of HackMD note to Hatena HTML
 pub struct Converter {
-  options: Config,
+  config: Config,
   pub unresolved_images: Vec<String>,
   resolved_images: Vec<ResolvedImage>,
   markdown: String,
+  image_alt_mappings: Vec<ImageAltMapping>,
 }
 
 impl Converter {
@@ -20,12 +27,13 @@ impl Converter {
   /// # Arguments
   ///
   /// * `options` - Converter options
-  pub fn new(options: Config) -> Self {
+  pub fn new(config: &Config) -> Self {
     Self {
-      options,
+      config: config.clone(),
       unresolved_images: vec![],
       resolved_images: vec![],
       markdown: "".into(),
+      image_alt_mappings: vec![],
     }
   }
 
@@ -39,7 +47,7 @@ impl Converter {
     self.resolved_images.clear();
     self.unresolved_images.clear();
 
-    let _ = self.convert_internal(markdown);
+    self.pre_parse(markdown);
 
     Ok(())
   }
@@ -52,43 +60,115 @@ impl Converter {
     Ok(html)
   }
 
-  fn convert_internal(&mut self, markdown: &str) -> Result<String, String> {
-    let options = Options::all();
+  /// Pre-parse Markdown content.
+  ///
+  /// - Check URL of unresolved images, then push to `Self.unresolved_images`
+  /// - Check alt text of images, then push to `Self.image_alt_mappings`
+  fn pre_parse(&mut self, markdown: &str) {
+    let mut image_url: Option<String> = None;
+    for envet in Parser::new_ext(markdown, Options::all()) {
+      println!("{:?}", envet);
+    }
 
-    let parser = Parser::new_ext(markdown, options).map(|event| match &event {
+    let parser = Parser::new_ext(markdown, Options::all()).map(|event| match &event {
+      Event::Text(text) => {
+        if image_url.is_some() {
+          self.image_alt_mappings.push(ImageAltMapping {
+            alt: text.to_string(),
+            url: image_url.clone().unwrap().into(),
+          });
+          image_url = None;
+        }
+        event
+      }
+
+      Event::Start(Tag::Image(LinkType::Inline, url, _)) => {
+        let resolved_image = self
+          .resolved_images
+          .iter()
+          .find(|image| image.original_url == url.to_string());
+        let unresolved_image = self
+          .unresolved_images
+          .iter()
+          .find(|&image| image == &url.to_string());
+        if unresolved_image.is_none() && resolved_image.is_none() {
+          self.unresolved_images.push(url.to_string());
+        }
+
+        image_url = Some(url.to_string());
+        event
+      }
+
+      _ => event,
+    });
+
+    let mut new_html = String::with_capacity(markdown.len() * 2);
+    html::push_html(&mut new_html, parser);
+  }
+
+  fn convert_internal(&mut self, markdown: &str) -> Result<String, String> {
+    let mut in_image = false;
+
+    let parser = Parser::new_ext(markdown, Options::all()).map(|event| match &event {
+      Event::End(Tag::Image(LinkType::Inline, _, _)) => {
+        in_image = false;
+        vec![]
+      }
+      Event::Text(_) => {
+        if in_image {
+          vec![]
+        } else {
+          vec![event]
+        }
+      }
+      // - Replace image URL
+      // - Add <figcaption> tag if image has alt text
       Event::Start(tag) => match &tag {
-        // Store image url
         Tag::Image(LinkType::Inline, url, title) => {
           let resolved_image = self
             .resolved_images
             .iter()
             .find(|image| image.original_url == url.to_string());
-          let unresolved_image = self
-            .unresolved_images
-            .iter()
-            .find(|&image| image == &url.to_string());
-          if unresolved_image.is_none() && resolved_image.is_none() {
-            self.unresolved_images.push(url.to_string());
-          }
           match resolved_image {
-            Some(resolved_image) => Event::Start(Tag::Image(
-              LinkType::Inline,
-              resolved_image.fotolife_url.clone().into(),
-              title.clone(),
-            )),
-            None => Event::Start(Tag::Image(LinkType::Inline, url.clone(), title.clone())),
+            Some(resolved_image) => {
+              in_image = true;
+
+              let alt_text = self
+                .image_alt_mappings
+                .iter()
+                .find(|mapping| mapping.url == url.to_string())
+                .map(|mapping| mapping.alt.clone())
+                .unwrap_or_else(|| title.to_string());
+              vec!(
+                Event::Html(format!(
+                  r#"<figure class="figure-image figure-image-fotolife mceNonEditable" title="{}">"#, alt_text).into()
+                ),
+                  Event::Html(format!(
+                    r#"<img src="{}" alt="{}" class="hatena-fotolife" loading="lazy" itemprop="image" title="">"#,
+                    resolved_image.fotolife_url, alt_text
+                  ).into()),
+                  Event::Html(r#"</img>"#.into()),
+                  Event::Html(r#"<figcaption class="mceEditable">"#.into()),
+                    Event::Text(alt_text.into()),
+                  Event::Html(r#"</figcaption>"#.into()),
+                Event::Html(r#"</figure>"#.into()),
+              )
+            }
+            None => vec!(event),
           }
         }
+
         // Adjust heading level based on options
-        Tag::Heading(level, fragment, classes) => Event::Start(Tag::Heading(
-          self.options.heading_min.add(*level as usize - 1).to_level(),
+        Tag::Heading(level, fragment, classes) => {
+          vec!(Event::Start(Tag::Heading(
+          self.config.heading_min.add(*level as usize - 1).to_level(),
           *fragment,
           classes.clone(),
-        )),
-        _ => event,
+        )))},
+        _ => vec!(event),
       },
-      _ => event,
-    });
+      _ => vec!(event),
+    }).flatten();
 
     let mut new_html = String::with_capacity(markdown.len() * 2);
     html::push_html(&mut new_html, parser);
@@ -118,7 +198,7 @@ mod tests {
   fn test_parse() {
     let mut options = Config::new();
     options.heading_min.set(3);
-    let mut converter = Converter::new(options);
+    let mut converter = Converter::new(&options);
     let markdown = "# Hello, world!\n\n![image_title](image_url)";
     converter.parse(markdown).unwrap();
 

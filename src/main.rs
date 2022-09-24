@@ -23,7 +23,7 @@ fn process() -> Result<(), ApplicationError> {
   let hackmd = hackmd::HackMD::new(hackmd_apitoken);
   let mut fotolife = hatena::HatenaUploader::new(hatena_apitoken, config.timeout)?;
 
-  let mut converter = converter::Converter::new(Config::new());
+  let mut converter = converter::Converter::new(&config);
   converter.parse(&markdown).unwrap();
 
   let do_image_cache = !config.image_mapping.is_empty();
