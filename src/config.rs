@@ -1,7 +1,6 @@
-use serde::{Deserialize, Serialize};
-
 use crate::{converter::options::HeadingDepth, error::ApplicationError};
 
+use serde::{Deserialize, Serialize};
 use shellexpand::tilde;
 
 /// Convert options for Markdown to Hatena HTML
@@ -27,6 +26,10 @@ pub struct Config {
   /// Output HTML file path
   #[serde(default = "default_output")]
   pub output: String,
+
+  /// Codeblock type
+  #[serde(default = "default_codeblock_type")]
+  pub codeblock_type: String,
 }
 
 fn default_download_dir() -> String {
@@ -45,6 +48,10 @@ fn default_image_mapping() -> String {
   "".into()
 }
 
+fn default_codeblock_type() -> String {
+  "pure".into()
+}
+
 impl Default for Config {
   fn default() -> Self {
     Config {
@@ -53,6 +60,7 @@ impl Default for Config {
       timeout: default_timeout(),
       image_mapping: default_image_mapping(),
       output: default_output(),
+      codeblock_type: default_codeblock_type(),
     }
   }
 }
@@ -131,6 +139,7 @@ mod tests {
         download_dir: "~/.md2hatena-cache".into(),
         image_mapping: default_image_mapping(),
         output: "~/test.html".into(),
+        codeblock_type: default_codeblock_type(),
       }
     );
   }

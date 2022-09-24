@@ -9,3 +9,13 @@ pub fn gen_uuid() -> String {
     .map(char::from)
     .collect()
 }
+
+pub fn codename2extension(codename: &str) -> String {
+  let parts = codename.split('.').collect::<Vec<_>>();
+  if parts.len() == 1 {
+    parts[0].into()
+  } else {
+    let extension = parts.last().unwrap();
+    extension.to_string()
+  }
+}

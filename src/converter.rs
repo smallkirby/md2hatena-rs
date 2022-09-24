@@ -1,10 +1,13 @@
+pub mod codeblock;
 pub mod image;
 pub mod options;
 
 use crate::config::Config;
 use image::ResolvedImage;
 
-use pulldown_cmark::{html, Event, LinkType, Options, Parser, Tag};
+use pulldown_cmark::{html, CodeBlockKind, Event, LinkType, Options, Parser, Tag};
+
+use self::codeblock::Codeblock;
 
 #[derive(Debug)]
 struct ImageAltMapping {
@@ -19,6 +22,7 @@ pub struct Converter {
   resolved_images: Vec<ResolvedImage>,
   markdown: String,
   image_alt_mappings: Vec<ImageAltMapping>,
+  codeblock: Box<dyn Codeblock>,
 }
 
 impl Converter {
@@ -28,12 +32,16 @@ impl Converter {
   ///
   /// * `options` - Converter options
   pub fn new(config: &Config) -> Self {
+    let codeblock = <dyn Codeblock>::from(&config.codeblock_type)
+      .unwrap_or(<dyn Codeblock>::from("pure").unwrap());
+
     Self {
       config: config.clone(),
       unresolved_images: vec![],
       resolved_images: vec![],
       markdown: "".into(),
       image_alt_mappings: vec![],
+      codeblock,
     }
   }
 
@@ -111,14 +119,12 @@ impl Converter {
   fn convert_internal(&mut self, markdown: &str) -> Result<String, String> {
     let mut in_image = false;
 
-    // Add credit at the start of content
-    let markdown = format!("<!-- Converted by md2hatena-rs -->\n{}", markdown);
-
     let parser = Parser::new_ext(&markdown, Options::all()).map(|event| match &event {
       Event::End(Tag::Image(LinkType::Inline, _, _)) => {
         in_image = false;
         vec![]
       }
+      Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(prog_name))) => self.codeblock.codeblock_end(prog_name),
       Event::Text(_) => {
         if in_image {
           vec![]
@@ -155,8 +161,6 @@ impl Converter {
                   Event::Html(r#"</img>"#.into()),
                   Event::Html(r#"<figcaption class="mceEditable">"#.into()),
                     Event::Text(alt_text.into()),
-                  Event::Html(r#"</figcaption>"#.into()),
-                Event::Html(r#"</figure>"#.into()),
               )
             }
             None => vec!(event),
@@ -170,6 +174,10 @@ impl Converter {
           *fragment,
           classes.clone(),
         )))},
+
+
+        Tag::CodeBlock(CodeBlockKind::Fenced(code_name)) => self.codeblock.codeblock_start(code_name),
+
         _ => vec!(event),
       },
       _ => vec!(event),
@@ -177,6 +185,13 @@ impl Converter {
 
     let mut new_html = String::with_capacity(markdown.len() * 2);
     html::push_html(&mut new_html, parser);
+
+    // Add pre-document of codeblock
+    let new_html = format!("{}\n{}", self.codeblock.predoc(), new_html);
+
+    // Add credit at the start of content
+    let new_html = format!("<!-- Converted by md2hatena-rs -->\n{}", new_html);
+
     Ok(new_html)
   }
 
