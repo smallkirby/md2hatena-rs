@@ -51,14 +51,12 @@ fn process() -> Result<(), ApplicationError> {
       path::Path::new(&config.download_dir),
       &mut fotolife,
       false,
-    );
+      &config.image_mapping,
+    )?;
 
     // Resolve images
     let resolved_images = ResolvedImage::from(unresolved_images, fotolife_ids);
     converter.resolve_images(&resolved_images);
-    if do_image_cache {
-      ResolvedImage::cache_to(&resolved_images, &config.image_mapping)?;
-    }
   }
 
   // Convert to HTML

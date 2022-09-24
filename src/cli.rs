@@ -1,6 +1,9 @@
 use std::{env, fs, io::Write, path, process::exit};
 
-use crate::{error::ApplicationError, hackmd::HackMD, hatena::HatenaUploader, util};
+use crate::{
+  converter::image::ResolvedImage, error::ApplicationError, hackmd::HackMD, hatena::HatenaUploader,
+  util,
+};
 
 use clap::Parser;
 use colored::*;
@@ -182,12 +185,12 @@ pub fn upload_images(
   download_dir: &path::Path,
   hatena: &mut HatenaUploader,
   use_cache: bool,
-) -> Vec<String> {
+  cache_path: &str,
+) -> Result<Vec<String>, ApplicationError> {
   if images.is_empty() {
-    return vec![];
+    return Ok(vec![]);
   }
   let mut fotolife_ids = vec![];
-
   hatena.init_profile().unwrap();
 
   let images = if use_cache {
@@ -220,15 +223,24 @@ pub fn upload_images(
     let save_path = download_dir.join(image.split('/').last().unwrap());
     let extension = save_path.extension().unwrap().to_str().unwrap();
     pb.set_message(save_path.to_string_lossy().to_string());
+    // Download image
     let uuid = util::gen_uuid();
     let uploaded_path = hatena.upload(&save_path, &uuid).unwrap();
     fotolife_ids.push(hatena.fotolife_url(&uploaded_path, extension));
+    // Cache image mapping
+    if !cache_path.is_empty() {
+      let resolved_image = ResolvedImage::from(
+        vec![image.to_string()],
+        vec![hatena.fotolife_url(&uploaded_path, extension)],
+      );
+      ResolvedImage::cache_to(&resolved_image, cache_path)?;
+    }
 
     pb.inc(1);
   }
 
   pb.finish_with_message("Done");
-  fotolife_ids
+  Ok(fotolife_ids)
 }
 
 pub fn write_result_html(html: &str, output_path: &str) {
