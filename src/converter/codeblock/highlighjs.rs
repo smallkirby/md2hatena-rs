@@ -34,7 +34,7 @@ impl Codeblock for Highlightjs {
   fn postdoc(&self) -> String {
     r#"
       <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/highlight.min.js"></script>
-      <script src="//cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
       <script>hljs.highlightAll(); hljs.initLineNumbersOnLoad({singleLine:true});</script>
       <!-- You have to add `<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/default.min.css">` -->
     "#.into()
