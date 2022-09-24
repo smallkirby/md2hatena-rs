@@ -17,7 +17,7 @@ impl Codeblock for Pure {
     )))]
   }
 
-  fn predoc(&self) -> String {
+  fn postdoc(&self) -> String {
     "".into()
   }
 }

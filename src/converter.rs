@@ -202,7 +202,7 @@ impl Converter {
     html::push_html(&mut new_html, parser);
 
     // Add pre-document of codeblock
-    let new_html = format!("{}\n{}", self.codeblock.predoc(), new_html);
+    let new_html = format!("{}\n{}", new_html, self.codeblock.postdoc());
 
     // Add credit at the start of content
     let new_html = format!("<!-- Converted by md2hatena-rs -->\n{}", new_html);

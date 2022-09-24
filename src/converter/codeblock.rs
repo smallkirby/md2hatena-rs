@@ -6,7 +6,7 @@ use pulldown_cmark::Event;
 pub trait Codeblock {
   fn codeblock_start(&self, prog_name: &str) -> Vec<Event>;
   fn codeblock_end(&self, prog_name: &str) -> Vec<Event>;
-  fn predoc(&self) -> String;
+  fn postdoc(&self) -> String;
 }
 
 impl dyn Codeblock {
