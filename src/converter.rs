@@ -5,7 +5,7 @@ pub mod options;
 use crate::config::Config;
 use image::ResolvedImage;
 
-use pulldown_cmark::{html, CodeBlockKind, Event, LinkType, Options, Parser, Tag};
+use pulldown_cmark::{html, CodeBlockKind, Event, LinkType, Options, Parser, Tag, HeadingLevel};
 
 use self::codeblock::Codeblock;
 
@@ -180,15 +180,21 @@ impl Converter {
         // Adjust heading level based on options
         Tag::Heading(level, fragment, classes) => {
           let cur_index = index;
-          index += 1;
-          vec!(
+
+          let mut events = vec![
             Event::Start(Tag::Heading(
               self.config.heading_min.add(*level as usize - 1).to_level(),
               *fragment,
               classes.clone(),
             )),
-            Event::Text(format!("{}. ", cur_index).into()),
-        )},
+          ];
+          if level == &HeadingLevel::H1 {
+            index += 1;
+            events.push(Event::Text(format!("{}. ", cur_index).into()));
+          }
+
+          events
+        },
 
 
         Tag::CodeBlock(CodeBlockKind::Fenced(code_name)) => self.codeblock.codeblock_start(code_name),
