@@ -122,8 +122,12 @@ impl Converter {
 
     let parser = Parser::new_ext(&markdown, Options::all()).map(|event| match &event {
       Event::End(Tag::Image(LinkType::Inline, _, _)) => {
-        in_image = false;
-        vec![]
+        if in_image {
+          in_image = false;
+          vec![]
+        } else {
+          vec![event]
+        }
       }
       Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(prog_name))) => self.codeblock.codeblock_end(prog_name),
       Event::End(Tag::Heading(level, fragment, classes)) => {
@@ -152,7 +156,7 @@ impl Converter {
             .find(|image| image.original_url == url.to_string());
           match resolved_image {
             Some(resolved_image) => {
-              in_image = false;
+              in_image = true;
 
               let alt_text = self
                 .image_alt_mappings
@@ -164,13 +168,15 @@ impl Converter {
                 Event::Html(format!(
                   r#"<figure class="figure-image figure-image-fotolife mceNonEditable" title="{}">"#, alt_text).into()
                 ),
-                  Event::Html(format!(
-                    r#"<img src="{}" alt="{}" class="hatena-fotolife" loading="lazy" itemprop="image" title="">"#,
-                    resolved_image.fotolife_url, alt_text
-                  ).into()),
-                  Event::Html(r#"</img>"#.into()),
-                  Event::Html(r#"<figcaption class="mceEditable">"#.into()),
-                    Event::Text(alt_text.into()),
+                Event::Html(format!(
+                  r#"<img src="{}" alt="{}" class="hatena-fotolife" loading="lazy" itemprop="image" title="">"#,
+                  resolved_image.fotolife_url, alt_text
+                ).into()),
+                Event::Html(r#"</img>"#.into()),
+                Event::Html(r#"<figcaption class="mceEditable">"#.into()),
+                Event::Text(alt_text.into()),
+                Event::Html(r#"</figcaption>"#.into()),
+                Event::Html(r#"</figure>"#.into()),
               )
             }
             None => vec!(event),
