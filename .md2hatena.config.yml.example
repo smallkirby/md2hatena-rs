@@ -3,3 +3,4 @@ heading_min: 3
 download_dir: ~/.md2hatena-cache
 image_mapping: ~/.md2hatena-cache/.mapping
 codeblock_type: highlight.js
+indexing: true

@@ -116,8 +116,9 @@ impl Converter {
     html::push_html(&mut new_html, parser);
   }
 
-  fn convert_internal(&mut self, markdown: &str) -> Result<String, String> {
+  fn convert_internal<'a>(&mut self, markdown: &str) -> Result<String, String> {
     let mut in_image = false;
+    let mut index = 1;
 
     let parser = Parser::new_ext(&markdown, Options::all()).map(|event| match &event {
       Event::End(Tag::Image(LinkType::Inline, _, _)) => {
@@ -125,6 +126,15 @@ impl Converter {
         vec![]
       }
       Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(prog_name))) => self.codeblock.codeblock_end(prog_name),
+      Event::End(Tag::Heading(level, fragment, classes)) => {
+        vec![
+            Event::End(Tag::Heading(
+              self.config.heading_min.add(*level as usize - 1).to_level(),
+              *fragment,
+              classes.clone(),
+            )),
+        ]
+      }
       Event::Text(_) => {
         if in_image {
           vec![]
@@ -169,11 +179,16 @@ impl Converter {
 
         // Adjust heading level based on options
         Tag::Heading(level, fragment, classes) => {
-          vec!(Event::Start(Tag::Heading(
-          self.config.heading_min.add(*level as usize - 1).to_level(),
-          *fragment,
-          classes.clone(),
-        )))},
+          let cur_index = index;
+          index += 1;
+          vec!(
+            Event::Start(Tag::Heading(
+              self.config.heading_min.add(*level as usize - 1).to_level(),
+              *fragment,
+              classes.clone(),
+            )),
+            Event::Text(format!("{}. ", cur_index).into()),
+        )},
 
 
         Tag::CodeBlock(CodeBlockKind::Fenced(code_name)) => self.codeblock.codeblock_start(code_name),

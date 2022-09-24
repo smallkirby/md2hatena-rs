@@ -30,6 +30,10 @@ pub struct Config {
   /// Codeblock type
   #[serde(default = "default_codeblock_type")]
   pub codeblock_type: String,
+
+  /// Auto-indexing for headings
+  #[serde(default = "default_indexing")]
+  pub indexing: bool,
 }
 
 fn default_download_dir() -> String {
@@ -52,6 +56,10 @@ fn default_codeblock_type() -> String {
   "pure".into()
 }
 
+fn default_indexing() -> bool {
+  false
+}
+
 impl Default for Config {
   fn default() -> Self {
     Config {
@@ -61,6 +69,7 @@ impl Default for Config {
       image_mapping: default_image_mapping(),
       output: default_output(),
       codeblock_type: default_codeblock_type(),
+      indexing: default_indexing(),
     }
   }
 }
@@ -140,6 +149,7 @@ mod tests {
         image_mapping: default_image_mapping(),
         output: "~/test.html".into(),
         codeblock_type: default_codeblock_type(),
+        indexing: default_indexing(),
       }
     );
   }
