@@ -111,7 +111,10 @@ impl Converter {
   fn convert_internal(&mut self, markdown: &str) -> Result<String, String> {
     let mut in_image = false;
 
-    let parser = Parser::new_ext(markdown, Options::all()).map(|event| match &event {
+    // Add credit at the start of content
+    let markdown = format!("<!-- Converted by md2hatena-rs -->\n{}", markdown);
+
+    let parser = Parser::new_ext(&markdown, Options::all()).map(|event| match &event {
       Event::End(Tag::Image(LinkType::Inline, _, _)) => {
         in_image = false;
         vec![]
