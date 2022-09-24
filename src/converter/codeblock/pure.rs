@@ -6,7 +6,6 @@ pub struct Pure {}
 
 impl Codeblock for Pure {
   fn codeblock_start(&self, prog_name: &str) -> Vec<Event> {
-    println!("PURe");
     vec![Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(
       prog_name.to_string().into(),
     )))]
