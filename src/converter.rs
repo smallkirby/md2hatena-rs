@@ -5,7 +5,7 @@ pub mod options;
 use crate::config::Config;
 use image::ResolvedImage;
 
-use pulldown_cmark::{html, CodeBlockKind, Event, LinkType, Options, Parser, Tag, HeadingLevel};
+use pulldown_cmark::{html, CodeBlockKind, Event, HeadingLevel, LinkType, Options, Parser, Tag};
 
 use self::codeblock::Codeblock;
 
