@@ -1,10 +1,43 @@
 use std::{env, fs, path, process::exit};
 
-use crate::{error::ApplicationError, hackmd::HackMD, hatena::HatenaUploader, util};
+use crate::{
+  error::ApplicationError, hackmd::HackMD, hatena::HatenaUploader, util,
+};
 
+use clap::Parser;
 use colored::*;
 use hatena_rs::oauth::HatenaConsumerInfo;
 use indicatif::ProgressBar;
+
+/// Command line arguments
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+pub struct Args {
+  /// Path to Markdown file to convert
+  #[clap(value_parser)]
+  pub markdown_path: String,
+
+  /// Directory to save temporary images
+  #[clap(short('d'), long("download-dir"), value_parser)]
+  pub download_dir: Option<String>,
+
+  /// Timeout in seconds for uploading images
+  #[clap(short('t'), long("timeout"), value_parser)]
+  pub timeout: Option<u64>,
+
+  /// Don't upload images to Hatena Fotolife, and don't resolve image URL
+  #[clap(short('n'), long("no-resolve"), value_parser, default_value = "false")]
+  pub no_resolve: bool,
+
+  /// Path to configuration file
+  #[clap(
+    short('c'),
+    long("config"),
+    value_parser,
+    default_value = "~/.md2hatena.config.yml"
+  )]
+  pub config_path: String,
+}
 
 /// Exit with error message
 pub fn panic_with_error(err: ApplicationError) {
@@ -12,11 +45,17 @@ pub fn panic_with_error(err: ApplicationError) {
     ApplicationError::RequestFailure(e) => {
       eprintln!("{} {}", "[!] Error:".red().bold(), e);
     }
-    ApplicationError::JsonParseFailure(e) => {
+    ApplicationError::OAuthFailure(e) => {
       eprintln!("{} {}", "[!] Error:".red().bold(), e);
     }
     ApplicationError::AuthentiocationFailure { message } => {
       eprintln!("{} {}", "[!] Error:".red().bold(), message);
+    }
+    ApplicationError::FileIoFailure(e) => {
+      eprintln!("{} {}", "[!] Error:".red().bold(), e);
+    }
+    ApplicationError::ConfigParseFailure(e) => {
+      eprintln!("{} {}", "[!] Error:".red().bold(), e);
     }
   }
   exit(1);

@@ -9,8 +9,14 @@ pub enum ApplicationError {
   RequestFailure(#[from] HackMDError),
 
   #[error("HatenaOAuth Error")]
-  JsonParseFailure(#[from] OauthError),
+  OAuthFailure(#[from] OauthError),
 
   #[error("authentication error: {message:?}")]
   AuthentiocationFailure { message: String },
+
+  #[error("File IO Failure")]
+  FileIoFailure(#[from] std::io::Error),
+
+  #[error("Config parse failure")]
+  ConfigParseFailure(#[from] serde_yaml::Error),
 }

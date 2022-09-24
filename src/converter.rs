@@ -1,6 +1,6 @@
 pub mod options;
 
-use crate::converter::options::*;
+use crate::config::Config;
 
 use pulldown_cmark::{html, Event, LinkType, Options, Parser, Tag};
 
@@ -29,7 +29,7 @@ impl ResolvedImage {
 
 /// Converter of HackMD note to Hatena HTML
 pub struct Converter {
-  options: ConverterOptions,
+  options: Config,
   pub unresolved_images: Vec<String>,
   resolved_images: Vec<ResolvedImage>,
   markdown: String,
@@ -41,7 +41,7 @@ impl Converter {
   /// # Arguments
   ///
   /// * `options` - Converter options
-  pub fn new(options: ConverterOptions) -> Self {
+  pub fn new(options: Config) -> Self {
     Self {
       options,
       unresolved_images: vec![],
@@ -137,7 +137,7 @@ mod tests {
 
   #[test]
   fn test_parse() {
-    let mut options = ConverterOptions::new();
+    let mut options = Config::new();
     options.heading_min.set(3);
     let mut converter = Converter::new(options);
     let markdown = "# Hello, world!\n\n![image_title](image_url)";

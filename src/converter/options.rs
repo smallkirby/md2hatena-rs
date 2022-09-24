@@ -1,7 +1,26 @@
 use pulldown_cmark::HeadingLevel;
+use serde::{Deserialize, Serialize};
 
+#[derive(Debug, PartialEq, Serialize)]
 pub struct HeadingDepth {
   depth: usize,
+}
+
+impl<'de> Deserialize<'de> for HeadingDepth {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    let s = String::deserialize(deserializer)?;
+    let depth = s.parse::<usize>().unwrap_or(1);
+    Ok(HeadingDepth { depth })
+  }
+}
+
+impl Default for HeadingDepth {
+  fn default() -> Self {
+    HeadingDepth { depth: 1 }
+  }
 }
 
 impl HeadingDepth {
@@ -26,29 +45,6 @@ impl HeadingDepth {
       5 => HeadingLevel::H5,
       6 => HeadingLevel::H6,
       _ => HeadingLevel::H6,
-    }
-  }
-}
-
-/// Convert options for Markdown to Hatena HTML
-pub struct ConverterOptions {
-  /// Minimum heading level
-  /// eg: If 3, `#` heading is converted to `###`, `##` is to `####`
-  pub heading_min: HeadingDepth,
-}
-
-impl Default for ConverterOptions {
-  fn default() -> Self {
-    Self {
-      heading_min: HeadingDepth::new(1),
-    }
-  }
-}
-
-impl ConverterOptions {
-  pub fn new() -> ConverterOptions {
-    ConverterOptions {
-      heading_min: HeadingDepth::new(1),
     }
   }
 }

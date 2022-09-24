@@ -22,3 +22,6 @@ jobs:
 
     - name: Build
       run: cargo build
+
+    - name: Test
+      run: cargo test
