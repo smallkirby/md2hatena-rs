@@ -1,6 +1,9 @@
 use crate::error::*;
+
+use colored::*;
 use hatena_rs::fotolife::Fotolife;
-use hatena_rs::oauth::{consts::OauthScope, HatenaConsumerInfo, HatenaOauth};
+use hatena_rs::oauth::{consts::OauthScope, error::OauthError, HatenaConsumerInfo, HatenaOauth};
+use rpassword::prompt_password;
 
 /// Hatena Fotolife uploader
 pub struct HatenaUploader {
@@ -25,7 +28,23 @@ impl HatenaUploader {
       OauthScope::ReadPublic,
       OauthScope::ReadPrivate,
     ];
-    let oauth = HatenaOauth::new(scopes, None, consumer_info).unwrap();
+    let grant_permission_callback = || {
+      let oauth_verifier = prompt_password(format!(
+        "{} Input Hatena token shown in the browser > ",
+        "[i]".bold().yellow()
+      ))
+      .unwrap();
+
+      if oauth_verifier.trim().is_empty() {
+        Ok(
+          std::env::var(hatena_rs::oauth::consts::ENV_OAUTH_VERIFIER)
+            .map_err(|_| OauthError::PermissionDeniedUser)?,
+        )
+      } else {
+        Ok(oauth_verifier.trim().to_string())
+      }
+    };
+    let oauth = HatenaOauth::new(scopes, Some(grant_permission_callback), consumer_info).unwrap();
     let fotolife = Fotolife::new(oauth);
 
     Ok(HatenaUploader {
@@ -61,7 +80,7 @@ impl HatenaUploader {
     )
   }
 
-  fn init_profile(&mut self) -> Result<(), ApplicationError> {
+  pub fn init_profile(&mut self) -> Result<(), ApplicationError> {
     let res = self.fotolife.oauth.get_access_token(false)?;
     self.myname = Some(res.url_name);
 

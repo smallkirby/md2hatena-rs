@@ -184,6 +184,8 @@ pub fn upload_images(
   }
   let mut fotolife_ids = vec![];
 
+  hatena.init_profile().unwrap();
+
   let images = if use_cache {
     images
       .iter()

@@ -66,9 +66,6 @@ impl Converter {
   /// - Check alt text of images, then push to `Self.image_alt_mappings`
   fn pre_parse(&mut self, markdown: &str) {
     let mut image_url: Option<String> = None;
-    for envet in Parser::new_ext(markdown, Options::all()) {
-      println!("{:?}", envet);
-    }
 
     let parser = Parser::new_ext(markdown, Options::all()).map(|event| match &event {
       Event::Text(text) => {
@@ -178,13 +175,14 @@ impl Converter {
   /// Resolve image URL to Hatena Fotolife URL
   pub fn resolve_images(&mut self, resolved_images: &Vec<ResolvedImage>) {
     for image in resolved_images {
-      self.unresolved_images.remove(
-        self
-          .unresolved_images
-          .iter()
-          .position(|url| url == &image.original_url)
-          .unwrap(),
-      );
+      let position = self
+        .unresolved_images
+        .iter()
+        .position(|url| url == &image.original_url);
+      if let Some(position) = position {
+        self.unresolved_images.remove(position);
+      }
+
       self.resolved_images.push(image.clone());
     }
   }
