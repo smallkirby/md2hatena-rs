@@ -1,31 +1,10 @@
+pub mod image;
 pub mod options;
 
 use crate::config::Config;
+use image::ResolvedImage;
 
 use pulldown_cmark::{html, Event, LinkType, Options, Parser, Tag};
-
-#[derive(Debug)]
-pub struct ResolvedImage {
-  pub original_url: String,
-  pub fotolife_url: String,
-}
-
-impl ResolvedImage {
-  pub fn from(original_urls: Vec<String>, fotolife_ids: Vec<String>) -> Vec<Self> {
-    if original_urls.len() != fotolife_ids.len() {
-      return vec![];
-    }
-
-    original_urls
-      .iter()
-      .zip(fotolife_ids.iter())
-      .map(|(original_url, fotolife_id)| ResolvedImage {
-        original_url: original_url.to_string(),
-        fotolife_url: fotolife_id.to_string(),
-      })
-      .collect()
-  }
-}
 
 /// Converter of HackMD note to Hatena HTML
 pub struct Converter {
@@ -117,7 +96,7 @@ impl Converter {
   }
 
   /// Resolve image URL to Hatena Fotolife URL
-  pub fn resolve_images(&mut self, resolved_images: Vec<ResolvedImage>) {
+  pub fn resolve_images(&mut self, resolved_images: &Vec<ResolvedImage>) {
     for image in resolved_images {
       self.unresolved_images.remove(
         self
@@ -126,7 +105,7 @@ impl Converter {
           .position(|url| url == &image.original_url)
           .unwrap(),
       );
-      self.resolved_images.push(image);
+      self.resolved_images.push(image.clone());
     }
   }
 }

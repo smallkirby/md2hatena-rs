@@ -27,6 +27,10 @@ pub struct Args {
   #[clap(short('n'), long("no-resolve"), value_parser, default_value = "false")]
   pub no_resolve: bool,
 
+  /// Path to cache file which stores mapping of image URL and Hatena Fotolife ID
+  #[clap(short('i'), long("image-cache"), value_parser)]
+  pub image_mapping: Option<String>,
+
   /// Path to configuration file
   #[clap(
     short('c'),
@@ -54,6 +58,9 @@ pub fn panic_with_error(err: ApplicationError) {
     }
     ApplicationError::ConfigParseFailure(e) => {
       eprintln!("{} {}", "[!] Error:".red().bold(), e);
+    }
+    ApplicationError::MiscError { message } => {
+      eprintln!("{} {}", "[!] Error:".red().bold(), message);
     }
   }
   exit(1);

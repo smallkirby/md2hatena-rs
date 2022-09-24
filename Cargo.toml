@@ -19,3 +19,4 @@ rand = "0.8.4"
 clap = { version = "3.2.2", features = ["derive"] }
 indicatif = "0.17.0"
 colored = "2.0.0"
+shellexpand = "2.1.2"

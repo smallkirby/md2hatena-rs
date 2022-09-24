@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{converter::options::HeadingDepth, error::ApplicationError};
 
+use shellexpand::tilde;
+
 /// Convert options for Markdown to Hatena HTML
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Config {
@@ -13,6 +15,10 @@ pub struct Config {
   /// Directory to save temporary images
   #[serde(default = "default_download_dir")]
   pub download_dir: String,
+
+  /// Path to cache file which stores mapping of image URL and Hatena Fotolife ID
+  #[serde(default = "default_image_mapping")]
+  pub image_mapping: String,
 
   /// Timeout in seconds for uploading images
   #[serde(default = "default_timeout")]
@@ -27,12 +33,17 @@ fn default_timeout() -> u64 {
   10
 }
 
+fn default_image_mapping() -> String {
+  "".into()
+}
+
 impl Default for Config {
   fn default() -> Self {
     Config {
       heading_min: HeadingDepth::default(),
       download_dir: default_download_dir(),
       timeout: default_timeout(),
+      image_mapping: default_image_mapping(),
     }
   }
 }
@@ -48,8 +59,10 @@ impl Config {
   ///
   /// * `arg` - command-line arguments
   pub fn from_args(args: &crate::cli::Args) -> Result<Self, ApplicationError> {
-    let mut config: Config = if std::path::Path::new(&args.config_path).exists() {
-      let config_str = std::fs::read_to_string(&args.config_path)?;
+    let config_path_str = &tilde(&args.config_path).to_string();
+    let config_path = std::path::Path::new(config_path_str);
+    let mut config: Config = if config_path.exists() {
+      let config_str = std::fs::read_to_string(config_path)?;
       serde_yaml::from_str(&config_str)?
     } else {
       Config::default()
@@ -58,9 +71,16 @@ impl Config {
     if args.download_dir.is_some() {
       config.download_dir = args.download_dir.clone().unwrap();
     }
+    config.download_dir = tilde(&config.download_dir).into();
+
     if args.timeout.is_some() {
       config.timeout = args.timeout.unwrap();
     }
+
+    if args.image_mapping.is_some() {
+      config.image_mapping = args.image_mapping.clone().unwrap();
+    }
+    config.image_mapping = tilde(&config.image_mapping).into();
 
     Ok(config)
   }
@@ -76,6 +96,7 @@ mod tests {
     let yml = "
       heading_min: 3
       timeout: 30
+      download_dir: ~/.md2hatena-cache
     ";
     let config: Config = serde_yaml::from_str(yml).unwrap();
 
@@ -84,7 +105,8 @@ mod tests {
       Config {
         heading_min: HeadingDepth::new(3),
         timeout: 30,
-        download_dir: default_download_dir(),
+        download_dir: "~/.md2hatena-cache".into(),
+        image_mapping: default_image_mapping(),
       }
     );
   }

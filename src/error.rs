@@ -19,4 +19,7 @@ pub enum ApplicationError {
 
   #[error("Config parse failure")]
   ConfigParseFailure(#[from] serde_yaml::Error),
+
+  #[error("Misc error: {message:?}")]
+  MiscError { message: String },
 }

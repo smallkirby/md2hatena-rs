@@ -7,7 +7,7 @@ use md2hatena::{
     read_markdown_file, upload_images, Args,
   },
   config::Config,
-  converter::{self, ResolvedImage},
+  converter::{self, image::ResolvedImage},
   error::ApplicationError,
   hackmd, hatena,
 };
@@ -26,7 +26,16 @@ fn process() -> Result<(), ApplicationError> {
   let mut converter = converter::Converter::new(Config::new());
   converter.parse(&markdown).unwrap();
 
+  let do_image_cache = !config.image_mapping.is_empty();
   if !args.no_resolve {
+    // Resolve images using cached ones first
+    let cached_images = if do_image_cache {
+      ResolvedImage::restore_from(&config.image_mapping)?
+    } else {
+      vec![]
+    };
+    converter.resolve_images(&cached_images);
+
     // Download images
     let unresolved_images = converter.unresolved_images.clone();
     download_images(
@@ -45,7 +54,11 @@ fn process() -> Result<(), ApplicationError> {
     );
 
     // Resolve images
-    converter.resolve_images(ResolvedImage::from(unresolved_images, fotolife_ids));
+    let resolved_images = ResolvedImage::from(unresolved_images, fotolife_ids);
+    converter.resolve_images(&resolved_images);
+    if do_image_cache {
+      ResolvedImage::cache_to(&resolved_images, &config.image_mapping)?;
+    }
   }
 
   // Convert to HTML
