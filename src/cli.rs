@@ -1,8 +1,6 @@
 use std::{env, fs, path, process::exit};
 
-use crate::{
-  error::ApplicationError, hackmd::HackMD, hatena::HatenaUploader, util,
-};
+use crate::{error::ApplicationError, hackmd::HackMD, hatena::HatenaUploader, util};
 
 use clap::Parser;
 use colored::*;
