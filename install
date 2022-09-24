@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -eu
+
+BINNAME=md2hatena
+
+cargo build --release
+sudo cp ./target/release/$BINNAME /usr/local/bin/$BINNAME
