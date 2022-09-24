@@ -4,7 +4,7 @@ use clap::Parser;
 use md2hatena::{
   cli::{
     download_images, get_hackmd_api_token, get_hatena_api_token, panic_with_error,
-    read_markdown_file, upload_images, Args,
+    read_markdown_file, upload_images, write_result_html, Args,
   },
   config::Config,
   converter::{self, image::ResolvedImage},
@@ -63,8 +63,7 @@ fn process() -> Result<(), ApplicationError> {
 
   // Convert to HTML
   let html = converter.convert().unwrap();
-
-  println!("{}", html);
+  write_result_html(&html, &config.output);
 
   Ok(())
 }

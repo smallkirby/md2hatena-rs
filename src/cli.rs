@@ -1,4 +1,4 @@
-use std::{env, fs, path, process::exit};
+use std::{env, fs, io::Write, path, process::exit};
 
 use crate::{error::ApplicationError, hackmd::HackMD, hatena::HatenaUploader, util};
 
@@ -30,6 +30,10 @@ pub struct Args {
   /// Path to cache file which stores mapping of image URL and Hatena Fotolife ID
   #[clap(short('i'), long("image-cache"), value_parser)]
   pub image_mapping: Option<String>,
+
+  /// Path to output HTML file
+  #[clap(short('o'), long("output"), value_parser)]
+  pub output: Option<String>,
 
   /// Path to configuration file
   #[clap(
@@ -225,4 +229,21 @@ pub fn upload_images(
 
   pb.finish_with_message("Done");
   fotolife_ids
+}
+
+pub fn write_result_html(html: &str, output_path: &str) {
+  let output_path = path::Path::new(output_path);
+  let output_dir = output_path.parent().unwrap();
+  if !output_dir.exists() {
+    fs::create_dir_all(output_dir).unwrap();
+  }
+
+  let mut file = fs::File::create(output_path).unwrap();
+  file.write(html.as_bytes()).unwrap();
+
+  println!(
+    "{} Output HTML: {}",
+    "[+]".green().bold(),
+    output_path.display()
+  );
 }

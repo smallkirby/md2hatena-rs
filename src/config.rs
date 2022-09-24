@@ -23,10 +23,18 @@ pub struct Config {
   /// Timeout in seconds for uploading images
   #[serde(default = "default_timeout")]
   pub timeout: u64,
+
+  /// Output HTML file path
+  #[serde(default = "default_output")]
+  pub output: String,
 }
 
 fn default_download_dir() -> String {
-  "./.md2hatena-imgs".into()
+  tilde(&"./.md2hatena-imgs").into()
+}
+
+fn default_output() -> String {
+  tilde(&"").into()
 }
 
 fn default_timeout() -> u64 {
@@ -44,6 +52,7 @@ impl Default for Config {
       download_dir: default_download_dir(),
       timeout: default_timeout(),
       image_mapping: default_image_mapping(),
+      output: default_output(),
     }
   }
 }
@@ -82,6 +91,19 @@ impl Config {
     }
     config.image_mapping = tilde(&config.image_mapping).into();
 
+    if args.output.is_some() {
+      config.output = args.output.clone().unwrap();
+    } else {
+      let tmp = std::path::Path::new(&args.markdown_path);
+      config.output = tilde(&format!(
+        "{}.{}",
+        tmp.with_extension("").to_string_lossy().to_string(),
+        "html"
+      ))
+      .into();
+    }
+    config.output = tilde(&config.output).into();
+
     Ok(config)
   }
 }
@@ -97,6 +119,7 @@ mod tests {
       heading_min: 3
       timeout: 30
       download_dir: ~/.md2hatena-cache
+      output: ~/test.html
     ";
     let config: Config = serde_yaml::from_str(yml).unwrap();
 
@@ -107,6 +130,7 @@ mod tests {
         timeout: 30,
         download_dir: "~/.md2hatena-cache".into(),
         image_mapping: default_image_mapping(),
+        output: "~/test.html".into(),
       }
     );
   }

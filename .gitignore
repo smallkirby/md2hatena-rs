@@ -1,7 +1,6 @@
 /target
 .env
-test.png
-test.md
+test.*
 .md2hatena-imgs
 .md2hatena.config.yml
 .cache
