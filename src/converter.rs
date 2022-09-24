@@ -96,6 +96,11 @@ impl Converter {
         event
       }
 
+      Event::End(Tag::Image(LinkType::Inline, ..)) => {
+        image_url = None;
+        event
+      }
+
       _ => event,
     });
 
@@ -128,7 +133,7 @@ impl Converter {
             .find(|image| image.original_url == url.to_string());
           match resolved_image {
             Some(resolved_image) => {
-              in_image = true;
+              in_image = false;
 
               let alt_text = self
                 .image_alt_mappings
